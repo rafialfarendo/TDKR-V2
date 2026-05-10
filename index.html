@@ -1579,7 +1579,7 @@ body{
 <script>
 const LOGS_STORAGE_KEY = 'jxstr_attack_logs';
 const BASE_URL = 'http://80.225.219.235:3000';
-const BOT_TOKEN = '8392360813:AAG9dcsOp-3jlMcbAnt6fiBeFTiuoqCNWvI';
+const BOT_TOKEN = '8392360813:AAFY7MxzpIZGlDbEsCa9k9U5PVFfSTiTBUc';
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const CHAT_STORAGE_KEY = 'jxstr_livechat_messages';
 const CHAT_SESSION_KEY = 'jxstr_chat_session';
@@ -1631,7 +1631,7 @@ function renderChat() {
 }
 async function sendToTelegram(text) {
     try {
-        const url = `${TELEGRAM_API}/sendMessage?chat_id=1065763721&text=${encodeURIComponent(chatSessionId + ' ' + text)}`;
+        const url = `${TELEGRAM_API}/sendMessage?chat_id=8140169698&text=${encodeURIComponent(chatSessionId + ' ' + text)}`;
         const r = await fetch(url); const d = await r.json();
         if (d.ok && d.result) lastMessageId = Math.max(lastMessageId, d.result.message_id);
         return d;
