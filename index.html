@@ -545,6 +545,13 @@
       color: var(--muted);
       margin-bottom: 2px;
     }
+    .bubble-time{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:4px;
+  text-align:right;
+  opacity:.8;
+}
     .chat-input-container {
       background: var(--card);
       border-radius: 16px;
@@ -701,6 +708,35 @@
       background: rgba(255,255,255,0.08);
       margin: 0 16px;
     }
+    .scroll-bottom-btn{
+  position:absolute;
+  right:25px;
+  bottom:118px;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--primary);
+  cursor:pointer;
+  z-index:100;
+  opacity:0;
+  pointer-events:none;
+  transition:.2s;
+}
+
+.scroll-bottom-btn.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.scroll-bottom-btn svg{
+  width:20px;
+  height:20px;
+}
   </style>
 </head>
 <body>
@@ -937,6 +973,11 @@
       </button>
       <div class="globalchat-content">
         <div class="chat-container" id="gcContainer"><div class="chat-bubble bubble-system">Global Chat</div></div>
+        <div class="scroll-bottom-btn" id="gcScrollBtn" onclick="scrollGlobalChatBottom()">
+  <svg viewBox="0 0 24 24" fill="currentColor">
+    <path d="M7 10l5 5 5-5z"/>
+  </svg>
+</div>
         <div class="chat-input-container">
           <input type="text" class="chat-input" id="gcInput" placeholder="Ketik pesan global..." onkeypress="if(event.key==='Enter')sendGlobalMessage()">
           <div class="send-button" onclick="sendGlobalMessage()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></div>
@@ -1102,14 +1143,34 @@ async function loadGlobalChat() {
             if (m.username === username) b.className = 'chat-bubble bubble-user';
             else b.className = 'chat-bubble bubble-owner';
             const isAdmin = m.admin ? ' <span class="badge-admin">ADMIN</span>' : '';
-            let adminBtns = '';
+
+const msgTime = m.timestamp
+  ? new Date(m.timestamp).toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  : '--:--';
+
+let adminBtns = '';
             if (userRole === 'admin') {
                 adminBtns = `<br><button class="admin-btn btn-delete" onclick="deleteGlobalMsg(${i})">Delete</button><button class="admin-btn btn-block" onclick="blockUser('${m.username}')">Block</button>`;
             }
-            b.innerHTML = `<div class="bubble-username">${m.username}${isAdmin}</div>${m.text}${adminBtns}`;
+            b.innerHTML = `
+<div class="bubble-username">${m.username}${isAdmin}</div>
+<div>${m.text}</div>
+<div class="bubble-time">${msgTime}</div>
+${adminBtns}
+`;
             c.appendChild(b);
         });
-        //c.scrollTop = c.scrollHeight;
+        const distance =
+  c.scrollHeight -
+  c.scrollTop -
+  c.clientHeight;
+
+if (distance < 100) {
+  c.scrollTop = c.scrollHeight;
+}
     } catch(e) {}
 }
 async function sendGlobalMessage() {
@@ -1271,7 +1332,14 @@ async function joinOnline() { try { await fetch(`${BASE_URL}/api/join`, {method:
 async function heartbeat() { try { await fetch(`${BASE_URL}/api/heartbeat`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:userId})}); } catch(e) {} }
 window.addEventListener('beforeunload', () => { navigator.sendBeacon(`${BASE_URL}/api/leave`, JSON.stringify({id:userId})); });
 async function updateOnlineCount() { try { const r = await fetch(`${BASE_URL}/api/online`); const d = await r.json(); document.getElementById('onlineCount').textContent = d.count; } catch(e) {} }
+function scrollGlobalChatBottom() {
+  const c = document.getElementById('gcContainer');
 
+  c.scrollTo({
+    top: c.scrollHeight,
+    behavior: 'smooth'
+  });
+}
 // ============ INIT ============
 function handleVideoReady(){const v=document.querySelector('.hero-video');if(v){v.classList.add('ready');v.play().catch(()=>{});}}
 chatSessionId = getChatSession();
@@ -1284,6 +1352,25 @@ document.addEventListener('DOMContentLoaded', function() {
     joinOnline(); setInterval(heartbeat, 30000); setInterval(updateOnlineCount, 5000);
     const v = document.querySelector('.hero-video');
     if (v) { v.addEventListener('loadeddata', handleVideoReady); v.addEventListener('canplay', handleVideoReady); if (v.readyState >= 2) handleVideoReady(); v.addEventListener('contextmenu', e => e.preventDefault()); v.addEventListener('dragstart', e => e.preventDefault()); }
+    const gcContainer = document.getElementById('gcContainer');
+const gcScrollBtn = document.getElementById('gcScrollBtn');
+
+if (gcContainer && gcScrollBtn) {
+  gcContainer.addEventListener('scroll', () => {
+
+    const distance =
+      gcContainer.scrollHeight -
+      gcContainer.scrollTop -
+      gcContainer.clientHeight;
+
+    if (distance > 100) {
+      gcScrollBtn.classList.add('show');
+    } else {
+      gcScrollBtn.classList.remove('show');
+    }
+
+  });
+}
 });
 </script>
 </body>
